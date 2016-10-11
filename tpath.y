@@ -1,6 +1,7 @@
 %token Literal Number Identifier Or And NE LE GE Div Mod DoubleSep
 %token Parent Self Child Ancestor Descendant DescendantOrSelf
 
+%debug
 %error-verbose
 
 %%
@@ -12,7 +13,7 @@ AbsPath             : '/'
                     /*TODO AbbrAbsPath*/
 
 RelPath             : Step
-                    | AbsPath
+                    | RelPath '/' Step
                     /*TODO AbbrRelPath*/
 
 Step                : AxisSpec NodeTest PredicateList 
@@ -34,6 +35,7 @@ Axis                : Parent
                     | DescendantOrSelf
 
 NodeTest            : NameTest
+                    | Identifier '(' ')'
                     /*TODO*/
 
 NameTest            : Identifier

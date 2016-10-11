@@ -14,7 +14,6 @@ ancestor::            return Ancestor;
 descendant::          return Descendant;
 descendant-or-self::  return DescendantOrSelf;
 "//"                  return DoubleSep;
-"/"                   return yytext[0];
 "$"                   |
 "*"                   |
 "+"                   |
@@ -28,6 +27,7 @@ descendant-or-self::  return DescendantOrSelf;
 "="                   |
 "<"                   |
 ">"                   |
+"/"                   return yytext[0];
 "!="                  return NE;
 "<="                  return LE;
 ">="                  return GE;

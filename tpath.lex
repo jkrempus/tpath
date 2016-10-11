@@ -1,20 +1,33 @@
 %%
 [ \n\r\t]             ;
-\/                    printf("[PATHSEP]");
-\"(\\.|[^"])*\"       printf("[LITERAL \"%s\"]", yytext);
-[0-9]+                printf("[INT %d]", atoi(yytext));
-[0-9a-zA-Z_]+         printf("[IDENTIFIER]");
-parent::              printf("[PARENT]");
-self::                printf("[SELF]");
-child::               printf("[CHILD]");
-ancestor::            printf("[ANCESTOR]");
-descendant::          printf("[DESCENDANT]");
-descendant-or-self::  printf("[DESCENDANT-OR-SELF]");
-"["                   printf("[LBRACK]");
-"]"                   printf("[RBRACK]");
-"("                   printf("[LPAR]");
-")"                   printf("[RPAR]");
-,                     printf("[COMA]");
-"|"                   printf("[PIPE]");
-
-
+or[^a-zA-Z0-9_]       return Or;
+and[^a-zA-Z0-9_]      return And;
+div[^a-zA-Z0-9_]      return Div;
+mod[^a-zA-Z0-9_]      return Mod;
+\"(\\.|[^"])*\"       return Literal;
+[0-9]+                return Number; //TODO: Floats
+[0-9a-zA-Z_]+         return Identifier;
+parent::              return Parent;
+self::                return Self;
+child::               return Child;
+ancestor::            return Ancestor;
+descendant::          return Descendant;
+descendant-or-self::  return DescendantOrSelf;
+"//"                  return DoubleSep;
+"/"                   return yytext[0];
+"$"                   |
+"*"                   |
+"+"                   |
+"-"                   |
+"["                   |
+"]"                   |
+"("                   |
+")"                   |
+,                     |
+"|"                   |
+"="                   |
+"<"                   |
+">"                   |
+"!="                  return NE;
+"<="                  return LE;
+">="                  return GE;

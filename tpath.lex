@@ -1,3 +1,7 @@
+%{
+#include "tpath.tab.h"
+%}
+
 %%
 [ \n\r\t]             ;
 or[^a-zA-Z0-9_]       return Or;

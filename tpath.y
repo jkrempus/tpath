@@ -1,102 +1,130 @@
-%token Literal Number Identifier Or And NE LE GE Div Mod DoubleSep
+%union
+{
+  long long int_;
+  char* str;
+};
+
+%token <str> Literal
+%token <str> Identifier
+%token <int_> Number
+%token Or And NE LE GE Div Mod DoubleSep
 %token Parent Self Child Ancestor Descendant DescendantOrSelf
 
 %debug
 %error-verbose
 
 %%
-Path                : RelPath
-                    | AbsPath
+Path:
+  RelPath
+| AbsPath
 
-AbsPath             : '/'
-                    | '/' RelPath
-                    /*TODO AbbrAbsPath*/
+AbsPath:
+  '/'
+| '/' RelPath
+/*TODO AbbrAbsPath*/
 
-RelPath             : Step
-                    | RelPath '/' Step
-                    /*TODO AbbrRelPath*/
+RelPath:
+  Step
+| RelPath '/' Step
+/*TODO AbbrRelPath*/
 
-Step                : AxisSpec NodeTest PredicateList 
-                    /*TODO AbbrStep*/
+Step:
+  AxisSpec NodeTest PredicateList 
+/*TODO AbbrStep*/
 
-PredicateList       : /*empty*/
-                    | PredicateList Predicate 
+PredicateList:
+  /*empty*/
+| PredicateList Predicate 
 
-Predicate           : '[' Expr ']'
+Predicate: '[' Expr ']'
 
-AxisSpec            : Axis
-                    /*TODO AbbrAxisSpec*/
+AxisSpec:
+  Axis
+/*TODO AbbrAxisSpec*/
 
-Axis                : Parent
-                    | Self
-                    | Child
-                    | Ancestor
-                    | Descendant
-                    | DescendantOrSelf
+Axis:
+  Parent
+| Self
+| Child
+| Ancestor
+| Descendant
+| DescendantOrSelf
 
-NodeTest            : NameTest
-                    | Identifier '(' ')'
-                    /*TODO*/
+NodeTest:
+  NameTest
+| Identifier '(' ')'
+/*TODO*/
 
-NameTest            : Identifier
-                    /*TODO*/
+NameTest:
+  Identifier
+/*TODO*/
 
-PrimaryExpr         : VariableReference
-                    | '(' Expr ')'
-                    | Literal                 
-                    | Number                    
-                    | FunctionCall
+PrimaryExpr:
+  VariableReference
+| '(' Expr ')'
+| Literal                 
+| Number                    
+| FunctionCall
 
-FunctionCall        : Identifier '(' ArgList ')'
+FunctionCall: Identifier '(' ArgList ')'
 
-ArgList             : /*empty*/
-                    | NonEmptyArgList 
+ArgList:
+  /*empty*/
+| NonEmptyArgList 
 
-NonEmptyArgList     : Expr
-                    | NonEmptyArgList ',' Expr
+NonEmptyArgList:
+  Expr
+| NonEmptyArgList ',' Expr
 
-VariableReference   : '$' Identifier
+VariableReference: '$' Identifier
 
-Expr                : OrExpr
+Expr: OrExpr
 
-OrExpr              : AndExpr
-                    | OrExpr Or AndExpr
+OrExpr:
+  AndExpr
+| OrExpr Or AndExpr
 
-AndExpr             : EqualityExpr
-                    | AndExpr And EqualityExpr
+AndExpr:
+  EqualityExpr
+| AndExpr And EqualityExpr
 
-EqualityExpr        : RelationalExpr
-                    | EqualityExpr '=' RelationalExpr
-                    | EqualityExpr NE RelationalExpr
+EqualityExpr:
+  RelationalExpr
+| EqualityExpr '=' RelationalExpr
+| EqualityExpr NE RelationalExpr
 
-RelationalExpr      : AdditiveExpr
-                    | RelationalExpr '<' AdditiveExpr
-                    | RelationalExpr '>' AdditiveExpr
-                    | RelationalExpr LE AdditiveExpr
-                    | RelationalExpr GE AdditiveExpr
+RelationalExpr:
+  AdditiveExpr
+| RelationalExpr '<' AdditiveExpr
+| RelationalExpr '>' AdditiveExpr
+| RelationalExpr LE AdditiveExpr
+| RelationalExpr GE AdditiveExpr
 
-AdditiveExpr        : MultiplicativeExpr
-                    | AdditiveExpr '+' MultiplicativeExpr
-                    | AdditiveExpr '-' MultiplicativeExpr
+AdditiveExpr:
+  MultiplicativeExpr
+| AdditiveExpr '+' MultiplicativeExpr
+| AdditiveExpr '-' MultiplicativeExpr
 
-MultiplicativeExpr  : UnaryExpr
-                    | MultiplicativeExpr '*' UnaryExpr
-                    | MultiplicativeExpr Div UnaryExpr
-                    | MultiplicativeExpr Mod UnaryExpr
+MultiplicativeExpr:
+  UnaryExpr
+| MultiplicativeExpr '*' UnaryExpr
+| MultiplicativeExpr Div UnaryExpr
+| MultiplicativeExpr Mod UnaryExpr
 
-UnaryExpr           : UnionExpr
-                    | '-' UnaryExpr
+UnaryExpr:
+  UnionExpr
+| '-' UnaryExpr
 
-UnionExpr           : PathExpr
-                    | UnionExpr '|' PathExpr
+UnionExpr:
+  PathExpr
+| UnionExpr '|' PathExpr
 
-PathExpr            : Path
-                    | FilterExpr
-                    | FilterExpr '/' RelPath
-                    | FilterExpr DoubleSep RelPath
+PathExpr:
+  Path
+| FilterExpr
+| FilterExpr '/' RelPath
+| FilterExpr DoubleSep RelPath
 
-FilterExpr          : PrimaryExpr
-                    | FilterExpr Predicate
-
-%%
-#include "lex.yy.c"
+FilterExpr:
+  PrimaryExpr
+| FilterExpr Predicate

@@ -1,14 +1,18 @@
 %union
 {
   long long int_;
+  double float_;
   char* str;
+  void* parsed;
 };
 
-%token <str> Literal
+%token <str> String
 %token <str> Identifier
-%token <int_> Number
+%token <int_> Int
+%token <float_> Float
 %token Or And NE LE GE Div Mod DoubleSep
 %token Parent Self Child Ancestor Descendant DescendantOrSelf
+%type <parsed> PrimaryExpr
 
 %debug
 %error-verbose
@@ -20,20 +24,7 @@
 }
 
 %{
-  #include <iostream>
-  #include "tpath.tab.hh"
-
-  struct ParseState { };
-
-  extern "C"
-  {
-    int yylex_init(yyscan_t);
-    int yylex_destroy(yyscan_t);
-    int yyset_in(FILE*, yyscan_t);
-  }
-
-  int yylex(YYSTYPE*, yyscan_t);
-  void yyerror(yyscan_t, yyscan_t, const char *s){}
+  #include "parse.h"
 %}
 
 %define api.pure full
@@ -93,11 +84,12 @@ NameTest:
 /*TODO*/
 
 PrimaryExpr:
-  VariableReference
-| '(' Expr ')'
-| Literal                 
-| Number { printf("number %lld\n", $1); }
-| FunctionCall
+  VariableReference {}
+| '(' Expr ')' {}
+| String {}                 
+| Int { printf("int %lld\n", $1); $$ = nullptr; }
+| Float { printf("float %lf\n", $1); $$ = nullptr; }
+| FunctionCall {}
 
 FunctionCall: Identifier '(' ArgList ')'
 

@@ -1,7 +1,7 @@
 %option reentrant bison-bridge
 
 %{
-#include "tpath.tab.hh"
+#include "parse.h"
 %}
 
 D [0-9]

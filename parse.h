@@ -1,11 +1,10 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include "tpath.tab.hh"
 
 struct AstNode
 {
-  enum { Int, Float, String, Identifier };
-
   int kind;
   bool is_root = true;
   union
@@ -35,7 +34,7 @@ struct ParseState
   AstNode* float_(double val)
   {
     auto r = new AstNode;
-    r->kind = AstNode::Float;
+    r->kind = Float;
     r->float_ = val;
     nodes.emplace_back(r);
     return r;
@@ -44,8 +43,8 @@ struct ParseState
   AstNode* str(const char* val)
   {
     auto r = new AstNode;
-    r->kind = AstNode::String;
-    r->float_ = val;
+    r->kind = String;
+    new(&r->str) std::string(val);
     nodes.emplace_back(r);
     return r;
   }

@@ -10,7 +10,8 @@
 
 %code requires 
 {
-  #include "parse.h"
+  struct AstNode;
+  struct ParseState;
   typedef void* yyscan_t;
 
   #define YY_DECL int yylex \
@@ -18,7 +19,7 @@
 }
 
 %{
-  #include "tpath.tab.hh"
+  #include "parse.h"
   extern "C"
   {
     int yylex_init(yyscan_t);
@@ -152,7 +153,7 @@ PathExpr:
 | FilterExpr DoubleSep RelPath
 
 FilterExpr:
-  PrimaryExpr { if($1 && $1->kind == AstNode::Float) printf("float %lf\n", $1->float_); $$ = $1; }
+  PrimaryExpr { if($1 && $1->kind == Float) printf("float %lf\n", $1->float_); $$ = $1; }
 | FilterExpr Predicate
 
 %%

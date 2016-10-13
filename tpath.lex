@@ -13,11 +13,11 @@ or[^a-zA-Z0-9_]       *yylval = nullptr; return Or;
 and[^a-zA-Z0-9_]      *yylval = nullptr; return And;
 div[^a-zA-Z0-9_]      *yylval = nullptr; return Div;
 mod[^a-zA-Z0-9_]      *yylval = nullptr; return Mod;
-\"(\\.|[^"])*\"       *yylval = ps->str(yytext); return String;
+\"(\\.|[^"])*\"       *yylval = ps->make(String, yytext); return String;
 {D}+"."{D}+           |
-{D}+"."{D}+{E}        *yylval = ps->float_(atof(yytext)); return Float;
-{D}+                  *yylval = ps->int_(atoll(yytext)); return Int;
-[0-9a-zA-Z_]+         *yylval = ps->id(yytext); return Identifier;
+{D}+"."{D}+{E}        *yylval = ps->make(Float, atof(yytext)); return Float;
+{D}+                  *yylval = ps->make(Int, atoll(yytext)); return Int;
+[0-9a-zA-Z_]+         *yylval = ps->make(Identifier, yytext); return Identifier;
 parent::              *yylval = nullptr; return Parent;
 self::                *yylval = nullptr; return Self;
 child::               *yylval = nullptr; return Child;

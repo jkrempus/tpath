@@ -7,8 +7,7 @@ struct AstNode
 {
   enum
   {
-    Neg = DescendantOrSelf + 1,
-    Filt
+    Filt = DescendantOrSelf + 1
   };
 
   int kind;
@@ -40,8 +39,11 @@ struct AstNode
   void print(int indent = 0)
   {
     for(ptrdiff_t i = 0; i < indent; i++) printf("  ");
-   
-    printf("%d ", kind);
+  
+    if(std::isprint(kind)) 
+      printf("'%c' ", kind);
+    else
+      printf("%d ", kind);
     if(kind == String || kind == Identifier) printf("%s\n", str.c_str());
     else if(kind == Int) printf("%lld\n", int_);
     else if(kind == Float) printf("%lf\n", float_);
@@ -71,28 +73,19 @@ struct ParseState
 {
   std::vector<std::unique_ptr<AstNode>> nodes;
 
-  AstNode* add(AstNode* a)
+  template<typename T>
+  AstNode* make(int kind, std::initializer_list<T> val)
   {
-    nodes.emplace_back(a);
-    return a;
+    auto r = new AstNode(kind, val);
+    nodes.emplace_back(r);
+    return r;
   }
 
-  AstNode* float_(double val) { return add(new AstNode(Float, val)); }
-  AstNode* int_(long long val) { return add(new AstNode(Int, val)); }
-  AstNode* str(const char* s) { return add(new AstNode(String, s)); }
-  AstNode* id(const char* s) { return add(new AstNode(Identifier, s)); }
-  AstNode* neg(AstNode* a) { return add(new AstNode(AstNode::Neg, {a})); }
-  AstNode* filt(AstNode* f, AstNode* pred)
-  { return add(new AstNode(AstNode::Filt, {f, pred})); }
-  AstNode* sep(AstNode* a, AstNode* b) { return add(new AstNode('/', {a, b})); }
-  AstNode* double_sep(AstNode* a, AstNode* b)
-  { return add(new AstNode('/', {a, b})); }
-  AstNode* mul(AstNode* a, AstNode* b) { return add(new AstNode('*', {a, b})); }
-  AstNode* div(AstNode* a, AstNode* b) { return add(new AstNode(Div, {a, b})); }
-  AstNode* mod(AstNode* a, AstNode* b) { return add(new AstNode(Mod, {a, b})); }
-  AstNode* union_(AstNode* a, AstNode* b)
-  { return add(new AstNode('|', {a, b})); }
-  AstNode* sum(AstNode* a, AstNode* b) { return add(new AstNode('+', {a, b})); }
-  AstNode* dif(AstNode* a, AstNode* b) { return add(new AstNode('-', {a, b})); }
-  AstNode* parens(AstNode* a) { return add(new AstNode('-', {a})); }
+  template<typename T>
+  AstNode* make(int kind, T val)
+  {
+    auto r = new AstNode(kind, val);
+    nodes.emplace_back(r);
+    return r;
+  }
 };

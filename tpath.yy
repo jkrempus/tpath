@@ -85,7 +85,7 @@ NameTest:
 
 PrimaryExpr:
   VariableReference {}
-| '(' Expr ')' { $$ = ps->parens($2); }
+| '(' Expr ')' { $$ = ps->make('(', {$2}); }
 | String {}                 
 | Int
 | Float
@@ -127,32 +127,32 @@ RelationalExpr:
 
 AdditiveExpr:
   MultiplicativeExpr
-| AdditiveExpr '+' MultiplicativeExpr { $$ = ps->sum($1, $3); }
-| AdditiveExpr '-' MultiplicativeExpr { $$ = ps->dif($1, $3); }
+| AdditiveExpr '+' MultiplicativeExpr { $$ = ps->make('+', {$1, $3}); }
+| AdditiveExpr '-' MultiplicativeExpr { $$ = ps->make('-', {$1, $3}); }
 
 MultiplicativeExpr:
   UnaryExpr
-| MultiplicativeExpr '*' UnaryExpr { $$ = ps->mul($1, $3); }
-| MultiplicativeExpr Div UnaryExpr { $$ = ps->div($1, $3); }
-| MultiplicativeExpr Mod UnaryExpr { $$ = ps->mod($1, $3); }
+| MultiplicativeExpr '*' UnaryExpr { $$ = ps->make('*', {$1, $3}); }
+| MultiplicativeExpr Div UnaryExpr { $$ = ps->make(Div, {$1, $3}); }
+| MultiplicativeExpr Mod UnaryExpr { $$ = ps->make(Mod, {$1, $3}); }
 
 UnaryExpr:
   UnionExpr
-| '-' UnaryExpr { $$ = ps->neg($2); }
+| '-' UnaryExpr { $$ = ps->make('-', {$2}); }
 
 UnionExpr:
   PathExpr
-| UnionExpr '|' PathExpr { $$ = ps->union_($1, $3); }
+| UnionExpr '|' PathExpr { $$ = ps->make('|', {$1, $3}); }
 
 PathExpr:
   Path
 | FilterExpr
-| FilterExpr '/' RelPath { $$ = ps->sep($1, $3); }
-| FilterExpr DoubleSep RelPath { $$ = ps->double_sep($1, $3); }
+| FilterExpr '/' RelPath { $$ = ps->make('/', {$1, $3}); }
+| FilterExpr DoubleSep RelPath { $$ = ps->make(DoubleSep, {$1, $3}); }
 
 FilterExpr:
   PrimaryExpr
-| FilterExpr Predicate { $$ = ps->filt($1, $2); }
+| FilterExpr Predicate { $$ = ps->make(AstNode::Filt, {$1, $2}); }
 
 %%
 

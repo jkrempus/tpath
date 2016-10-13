@@ -15,7 +15,7 @@
   typedef void* yyscan_t;
 
   #define YY_DECL int yylex \
-    (YYSTYPE * yylval_param, yyscan_t yyscanner, ParseState* parse_state)
+    (YYSTYPE * yylval_param, yyscan_t yyscanner, ParseState* ps)
 }
 
 %{
@@ -32,8 +32,8 @@
 %}
 
 %define api.pure full
-%lex-param {yyscan_t scanner} {ParseState* parse_state}
-%parse-param {yyscan_t scanner} {ParseState* parse_state}
+%lex-param {yyscan_t scanner} {ParseState* ps}
+%parse-param {yyscan_t scanner} {ParseState* ps}
 
 %%
 Path:
@@ -77,8 +77,6 @@ Axis:
 NodeTest:
   NameTest
 | Identifier '(' ')'
-{
-}
 /*TODO*/
 
 NameTest:
@@ -87,7 +85,7 @@ NameTest:
 
 PrimaryExpr:
   VariableReference {}
-| '(' Expr ')' {}
+| '(' Expr ')' { $$ = ps->parens($2); }
 | String {}                 
 | Int
 | Float
@@ -105,7 +103,7 @@ NonEmptyArgList:
 
 VariableReference: '$' Identifier
 
-Expr: OrExpr
+Expr: OrExpr { if($1) { printf("Expr\n"); $1->print(); } $$ = $1; }
 
 OrExpr:
   AndExpr
@@ -129,45 +127,45 @@ RelationalExpr:
 
 AdditiveExpr:
   MultiplicativeExpr
-| AdditiveExpr '+' MultiplicativeExpr
-| AdditiveExpr '-' MultiplicativeExpr
+| AdditiveExpr '+' MultiplicativeExpr { $$ = ps->sum($1, $3); }
+| AdditiveExpr '-' MultiplicativeExpr { $$ = ps->dif($1, $3); }
 
 MultiplicativeExpr:
   UnaryExpr
-| MultiplicativeExpr '*' UnaryExpr
-| MultiplicativeExpr Div UnaryExpr
-| MultiplicativeExpr Mod UnaryExpr
+| MultiplicativeExpr '*' UnaryExpr { $$ = ps->mul($1, $3); }
+| MultiplicativeExpr Div UnaryExpr { $$ = ps->div($1, $3); }
+| MultiplicativeExpr Mod UnaryExpr { $$ = ps->mod($1, $3); }
 
 UnaryExpr:
   UnionExpr
-| '-' UnaryExpr
+| '-' UnaryExpr { $$ = ps->neg($2); }
 
 UnionExpr:
   PathExpr
-| UnionExpr '|' PathExpr
+| UnionExpr '|' PathExpr { $$ = ps->union_($1, $3); }
 
 PathExpr:
   Path
 | FilterExpr
-| FilterExpr '/' RelPath
-| FilterExpr DoubleSep RelPath
+| FilterExpr '/' RelPath { $$ = ps->sep($1, $3); }
+| FilterExpr DoubleSep RelPath { $$ = ps->double_sep($1, $3); }
 
 FilterExpr:
-  PrimaryExpr { if($1 && $1->kind == Float) printf("float %lf\n", $1->float_); $$ = $1; }
-| FilterExpr Predicate
+  PrimaryExpr
+| FilterExpr Predicate { $$ = ps->filt($1, $2); }
 
 %%
 
-int main ()
+int main (int argc, char** argv)
 {
-  ParseState parse_state;
+  ParseState ps;
   yyscan_t scanner;
   int tok;
 
   yylex_init(&scanner);
-  yyset_in(stdin, scanner );
+  yyset_in(argc > 1 ? fopen(argv[1], "r") : stdin, scanner );
 
-  while(!feof(stdin)) yyparse(scanner, &parse_state);
+  while(!feof(stdin)) yyparse(scanner, &ps);
 
   yylex_destroy(scanner);
   return 0;

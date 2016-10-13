@@ -1,34 +1,37 @@
-%union
-{
-  long long int_;
-  double float_;
-  char* str;
-  void* parsed;
-};
 
-%token <str> String
-%token <str> Identifier
-%token <int_> Int
-%token <float_> Float
+%define api.value.type {AstNode*}
+
+%token String Identifier Int Float
 %token Or And NE LE GE Div Mod DoubleSep
 %token Parent Self Child Ancestor Descendant DescendantOrSelf
-%type <parsed> PrimaryExpr
 
 %debug
 %error-verbose
 
 %code requires 
 {
+  #include "parse.h"
   typedef void* yyscan_t;
-  struct ParseState;
+
+  #define YY_DECL int yylex \
+    (YYSTYPE * yylval_param, yyscan_t yyscanner, ParseState* parse_state)
 }
 
 %{
-  #include "parse.h"
+  #include "tpath.tab.hh"
+  extern "C"
+  {
+    int yylex_init(yyscan_t);
+    int yylex_destroy(yyscan_t);
+    int yyset_in(FILE*, yyscan_t);
+  }
+
+  int yylex(YYSTYPE*, yyscan_t, ParseState*);
+  void yyerror(yyscan_t, yyscan_t, const char *s){}
 %}
 
 %define api.pure full
-%lex-param {yyscan_t scanner}
+%lex-param {yyscan_t scanner} {ParseState* parse_state}
 %parse-param {yyscan_t scanner} {ParseState* parse_state}
 
 %%
@@ -45,7 +48,6 @@ RelPath:
   Step
 | RelPath '/' Step
   {
-    std::cout << "path segment" << std::endl;
   }
 /*TODO AbbrRelPath*/
 
@@ -75,7 +77,6 @@ NodeTest:
   NameTest
 | Identifier '(' ')'
 {
-  std::cout << "NodeTest " << $1 << "()" << std::endl;
 }
 /*TODO*/
 
@@ -87,8 +88,8 @@ PrimaryExpr:
   VariableReference {}
 | '(' Expr ')' {}
 | String {}                 
-| Int { printf("int %lld\n", $1); $$ = nullptr; }
-| Float { printf("float %lf\n", $1); $$ = nullptr; }
+| Int
+| Float
 | FunctionCall {}
 
 FunctionCall: Identifier '(' ArgList ')'
@@ -151,7 +152,7 @@ PathExpr:
 | FilterExpr DoubleSep RelPath
 
 FilterExpr:
-  PrimaryExpr
+  PrimaryExpr { if($1 && $1->kind == AstNode::Float) printf("float %lf\n", $1->float_); $$ = $1; }
 | FilterExpr Predicate
 
 %%

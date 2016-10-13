@@ -9,25 +9,25 @@ E [Ee][+-]?{D}+
 
 %%
 [ \n\r\t]             ;
-or[^a-zA-Z0-9_]       return Or;
-and[^a-zA-Z0-9_]      return And;
-div[^a-zA-Z0-9_]      return Div;
-mod[^a-zA-Z0-9_]      return Mod;
-\"(\\.|[^"])*\"       { yylval->str = strdup(yytext); return String; }
+or[^a-zA-Z0-9_]       *yylval = nullptr; return Or;
+and[^a-zA-Z0-9_]      *yylval = nullptr; return And;
+div[^a-zA-Z0-9_]      *yylval = nullptr; return Div;
+mod[^a-zA-Z0-9_]      *yylval = nullptr; return Mod;
+\"(\\.|[^"])*\"       { *yylval = new AstNode; return String; }
 {D}+"."{D}+           |
-{D}+"."{D}+{E}        { yylval->float_ = atof(yytext); return Float; }
-{D}+                  { yylval->int_ = atoll(yytext); return Int; }
-[0-9a-zA-Z_]+         { yylval->str = strdup(yytext); return Identifier; }
-parent::              return Parent;
-self::                return Self;
-child::               return Child;
-ancestor::            return Ancestor;
-descendant::          return Descendant;
-descendant-or-self::  return DescendantOrSelf;
-"//"                  return DoubleSep;
-"!="                  return NE;
-"<="                  return LE;
-">="                  return GE;
+{D}+"."{D}+{E}        { *yylval = parse_state->float_(atof(yytext)); return Float; }
+{D}+                  { *yylval = new AstNode; return Int; }
+[0-9a-zA-Z_]+         { *yylval = new AstNode; return Identifier; }
+parent::              *yylval = nullptr; return Parent;
+self::                *yylval = nullptr; return Self;
+child::               *yylval = nullptr; return Child;
+ancestor::            *yylval = nullptr; return Ancestor;
+descendant::          *yylval = nullptr; return Descendant;
+descendant-or-self::  *yylval = nullptr; return DescendantOrSelf;
+"//"                  *yylval = nullptr; return DoubleSep;
+"!="                  *yylval = nullptr; return NE;
+"<="                  *yylval = nullptr; return LE;
+">="                  *yylval = nullptr; return GE;
 "$"                   |
 "*"                   |
 "+"                   |
@@ -41,4 +41,4 @@ descendant-or-self::  return DescendantOrSelf;
 "="                   |
 "<"                   |
 ">"                   |
-"/"                   return yytext[0];
+"/"                   *yylval = nullptr; return yytext[0];

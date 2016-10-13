@@ -1,5 +1,7 @@
+%option reentrant bison-bridge
+
 %{
-#include "tpath.tab.h"
+#include "tpath.tab.hh"
 %}
 
 %%
@@ -8,9 +10,9 @@ or[^a-zA-Z0-9_]       return Or;
 and[^a-zA-Z0-9_]      return And;
 div[^a-zA-Z0-9_]      return Div;
 mod[^a-zA-Z0-9_]      return Mod;
-\"(\\.|[^"])*\"       return Literal;
-[0-9]+                return Number; //TODO: Floats
-[0-9a-zA-Z_]+         return Identifier;
+\"(\\.|[^"])*\"       { yylval->str = strdup(yytext); return Literal; }
+[0-9]+                { yylval->int_ = atoll(yytext); return Number; } //TODO: Floats
+[0-9a-zA-Z_]+         { yylval->str = strdup(yytext); return Identifier; }
 parent::              return Parent;
 self::                return Self;
 child::               return Child;

@@ -13,6 +13,25 @@
 %debug
 %error-verbose
 
+
+%{
+  #include <iostream>
+  typedef void* yyscan_t;
+  #include "tpath.tab.hh"
+  extern "C"
+  {
+   int yylex(YYSTYPE*, yyscan_t);
+   int yylex_init(yyscan_t);
+   int yylex_destroy(yyscan_t);
+   int yyset_in(FILE*, yyscan_t);
+  }
+  void yyerror(yyscan_t, const char *s){}
+%}
+
+%define api.pure full
+%lex-param {void* scanner}
+%parse-param {void* scanner}
+
 %%
 Path:
   RelPath
@@ -26,6 +45,9 @@ AbsPath:
 RelPath:
   Step
 | RelPath '/' Step
+  {
+    std::cout << "path segment" << std::endl;
+  }
 /*TODO AbbrRelPath*/
 
 Step:
@@ -53,6 +75,9 @@ Axis:
 NodeTest:
   NameTest
 | Identifier '(' ')'
+{
+  std::cout << "NodeTest " << $1 << "()" << std::endl;
+}
 /*TODO*/
 
 NameTest:
@@ -128,3 +153,19 @@ PathExpr:
 FilterExpr:
   PrimaryExpr
 | FilterExpr Predicate
+
+%%
+
+int main ()
+{
+  yyscan_t scanner;
+  int tok;
+
+  yylex_init(&scanner);
+  yyset_in(stdin, scanner );
+
+  while(!feof(stdin)) yyparse(scanner);
+
+  yylex_destroy(scanner);
+  return 0;
+}

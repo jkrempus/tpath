@@ -13,24 +13,32 @@
 %debug
 %error-verbose
 
+%code requires 
+{
+  typedef void* yyscan_t;
+  struct ParseState;
+}
 
 %{
   #include <iostream>
-  typedef void* yyscan_t;
   #include "tpath.tab.hh"
+
+  struct ParseState { };
+
   extern "C"
   {
-   int yylex(YYSTYPE*, yyscan_t);
-   int yylex_init(yyscan_t);
-   int yylex_destroy(yyscan_t);
-   int yyset_in(FILE*, yyscan_t);
+    int yylex_init(yyscan_t);
+    int yylex_destroy(yyscan_t);
+    int yyset_in(FILE*, yyscan_t);
   }
-  void yyerror(yyscan_t, const char *s){}
+
+  int yylex(YYSTYPE*, yyscan_t);
+  void yyerror(yyscan_t, yyscan_t, const char *s){}
 %}
 
 %define api.pure full
-%lex-param {void* scanner}
-%parse-param {void* scanner}
+%lex-param {yyscan_t scanner}
+%parse-param {yyscan_t scanner} {ParseState* parse_state}
 
 %%
 Path:
@@ -88,7 +96,7 @@ PrimaryExpr:
   VariableReference
 | '(' Expr ')'
 | Literal                 
-| Number                    
+| Number { printf("number %lld\n", $1); }
 | FunctionCall
 
 FunctionCall: Identifier '(' ArgList ')'
@@ -158,13 +166,14 @@ FilterExpr:
 
 int main ()
 {
+  ParseState parse_state;
   yyscan_t scanner;
   int tok;
 
   yylex_init(&scanner);
   yyset_in(stdin, scanner );
 
-  while(!feof(stdin)) yyparse(scanner);
+  while(!feof(stdin)) yyparse(scanner, &parse_state);
 
   yylex_destroy(scanner);
   return 0;

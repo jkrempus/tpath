@@ -17,6 +17,43 @@ struct AstNode
     PredicateList,
   };
 
+  static const char* enum_to_str(int val)
+  {
+    switch(val)
+    {
+#define CASE(s) case s: return #s;
+      CASE(String)
+      CASE(Identifier)
+      CASE(Int)
+      CASE(Float)
+      CASE(Or)
+      CASE(And)
+      CASE(NE)
+      CASE(LE)
+      CASE(GE)
+      CASE(Div)
+      CASE(Mod)
+      CASE(DoubleSep)
+      CASE(DoubleDot)
+      CASE(Parent)
+      CASE(Self)
+      CASE(Child)
+      CASE(Ancestor)
+      CASE(Descendant)
+      CASE(DescendantOrSelf)
+      CASE(Filt)
+      CASE(ArgList)
+      CASE(Call)
+      CASE(NodeType)
+      CASE(AbsPath)
+      CASE(RelPath)
+      CASE(Step)
+      CASE(PredicateList)
+#undef CASE
+      default: return nullptr;
+    }
+  }
+
   int kind;
   bool is_root = true;
   int idx = 0;
@@ -51,7 +88,7 @@ struct AstNode
     if(std::isprint(kind)) 
       printf("'%c' ", kind);
     else
-      printf("%d ", kind);
+      printf("%s ", enum_to_str(kind));
 
     if(idx == 2) printf("%s\n", str.c_str());
     else if(idx == 0) printf("%lld\n", int_);

@@ -2,7 +2,7 @@
 %define api.value.type {AstNode*}
 
 %token String Identifier Int Float
-%token Or And NE LE GE Div Mod DoubleSep
+%token Or And NE LE GE Div Mod DoubleSep DoubleDot
 %token Parent Self Child Ancestor Descendant DescendantOrSelf
 
 %debug
@@ -43,18 +43,16 @@ Path:
 AbsPath:
   '/'
 | '/' RelPath
-/*TODO AbbrAbsPath*/
+| AbbrAbsPath
 
 RelPath:
   Step
 | RelPath '/' Step
-  {
-  }
-/*TODO AbbrRelPath*/
+| AbbrRelPath
 
 Step:
-  AxisSpec NodeTest PredicateList 
-/*TODO AbbrStep*/
+  Axis NodeTest PredicateList 
+| AbbrStep
 
 PredicateList:
   /*empty*/
@@ -62,9 +60,15 @@ PredicateList:
 
 Predicate: '[' Expr ']'
 
-AxisSpec:
-  Axis
-/*TODO AbbrAxisSpec*/
+AbbrAbsPath:
+  DoubleSep RelPath
+
+AbbrRelPath:
+  RelPath DoubleSep Step
+
+AbbrStep:
+  '.'
+| DoubleDot
 
 Axis:
   Parent

@@ -25,6 +25,7 @@ ancestor::            *yylval = nullptr; return Ancestor;
 descendant::          *yylval = nullptr; return Descendant;
 descendant-or-self::  *yylval = nullptr; return DescendantOrSelf;
 "//"                  *yylval = nullptr; return DoubleSep;
+".."                  *yylval = nullptr; return DoubleDot;
 "!="                  *yylval = nullptr; return NE;
 "<="                  *yylval = nullptr; return LE;
 ">="                  *yylval = nullptr; return GE;
@@ -41,4 +42,5 @@ descendant-or-self::  *yylval = nullptr; return DescendantOrSelf;
 "="                   |
 "<"                   |
 ">"                   |
+"."                   |
 "/"                   *yylval = nullptr; return yytext[0];

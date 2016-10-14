@@ -41,24 +41,24 @@ Path:
 | AbsPath
 
 AbsPath:
-  '/'
-| '/' RelPath
-| AbbrAbsPath
+  '/' { $$ = ps->make(AstNode::AbsPath, {ps->make(AstNode::RelPath, {})}); }
+| '/' RelPath { $$ = ps->make(AstNode::AbsPath, {$2}); }
+| AbbrAbsPath /*TODO*/
 
 RelPath:
-  Step
-| RelPath '/' Step
-| AbbrRelPath
+  Step { $$ = ps->make(AstNode::RelPath, {$1}); }
+| RelPath '/' Step { $1->add_child($3); $$ = $1; }
+| AbbrRelPath /*TODO*/
 
 Step:
-  Axis NodeTest PredicateList 
+  Axis NodeTest PredicateList { $$ = ps->make(AstNode::Step, {$1, $2, $3}); }
 | AbbrStep
 
 PredicateList:
-  /*empty*/
-| PredicateList Predicate 
+  /*empty*/ { $$ = ps->make(AstNode::PredicateList, {}); }
+| PredicateList Predicate  { $1->add_child($2); $$ = $1; }
 
-Predicate: '[' Expr ']'
+Predicate: '[' Expr ']' { $$ = $2; }
 
 AbbrAbsPath:
   DoubleSep RelPath
@@ -107,7 +107,7 @@ NonEmptyArgList:
 
 VariableReference: '$' Identifier { $$ = ps->make('$', {$2}); }
 
-Expr: OrExpr { if($1) { printf("Expr\n"); $1->print(); } $$ = $1; }
+Expr: OrExpr
 
 OrExpr:
   AndExpr
@@ -172,5 +172,13 @@ int main (int argc, char** argv)
   while(!feof(stdin)) yyparse(scanner, &ps);
 
   yylex_destroy(scanner);
+
+  for(auto& e : ps.nodes)
+    if(e->is_root)
+    {
+      printf("Top level node:\n");
+      e->print();
+    }
+
   return 0;
 }

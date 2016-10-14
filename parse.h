@@ -10,25 +10,30 @@ struct AstNode
     Filt = DescendantOrSelf + 1,
     ArgList,
     Call,
-    NodeType
+    NodeType,
+    AbsPath,
+    RelPath,
+    Step,
+    PredicateList,
   };
 
   int kind;
   bool is_root = true;
+  int idx = 0;
   union
   {
-    double float_;
     long long int_;
+    double float_;
     std::string str;
     std::vector<AstNode*> children;
   };
 
   AstNode(){}
-  AstNode(int kind, double float_) : kind(kind), float_(float_) {}
-  AstNode(int kind, long long int_) : kind(kind), int_(int_) {}
-  AstNode(int kind, const char* str) : kind(kind), str(str) {}
+  AstNode(int kind, long long int_) : kind(kind), int_(int_), idx(0) {}
+  AstNode(int kind, double float_) : kind(kind), float_(float_), idx(1) {}
+  AstNode(int kind, const char* str) : kind(kind), str(str), idx(2) {}
   AstNode(int kind, std::initializer_list<AstNode*> children)
-  : kind(kind), children()
+  : kind(kind), children(), idx(3)
   {
     for(auto e : children)
     {
@@ -48,9 +53,9 @@ struct AstNode
     else
       printf("%d ", kind);
 
-    if(kind == String || kind == Identifier) printf("%s\n", str.c_str());
-    else if(kind == Int) printf("%lld\n", int_);
-    else if(kind == Float) printf("%lf\n", float_);
+    if(idx == 2) printf("%s\n", str.c_str());
+    else if(idx == 0) printf("%lld\n", int_);
+    else if(idx == 1) printf("%lf\n", float_);
     else
     {
       printf("node\n");
@@ -66,9 +71,9 @@ struct AstNode
 
   ~AstNode()
   {
-    if(kind == String || kind == Identifier)
+    if(idx == 2)
       str.~basic_string();
-    else if(kind != Int && kind != Float)
+    else if(idx == 2)
       children.~vector();
   }
 };
@@ -81,7 +86,6 @@ struct ParseState
   {
     auto r = new AstNode(kind, val);
     nodes.emplace_back(r);
-    r->print();
     return r;
   }
 
@@ -90,7 +94,13 @@ struct ParseState
   {
     auto r = new AstNode(kind, val);
     nodes.emplace_back(r);
-    r->print();
+    return r;
+  }
+  
+  AstNode* make(int kind)
+  {
+    auto r = new AstNode(kind, (long long) 0);
+    nodes.emplace_back(r);
     return r;
   }
 };

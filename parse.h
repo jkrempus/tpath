@@ -7,7 +7,10 @@ struct AstNode
 {
   enum
   {
-    Filt = DescendantOrSelf + 1
+    Filt = DescendantOrSelf + 1,
+    ArgList,
+    Call,
+    NodeType
   };
 
   int kind;
@@ -30,7 +33,7 @@ struct AstNode
     for(auto e : children)
     {
       e->is_root = false;
-      this->children.emplace_back(e);
+      this->children.push_back(e);
     }
   }
 
@@ -44,6 +47,7 @@ struct AstNode
       printf("'%c' ", kind);
     else
       printf("%d ", kind);
+
     if(kind == String || kind == Identifier) printf("%s\n", str.c_str());
     else if(kind == Int) printf("%lld\n", int_);
     else if(kind == Float) printf("%lf\n", float_);
@@ -57,7 +61,7 @@ struct AstNode
   void add_child(AstNode* c)
   {
     c->is_root = false;
-    children.emplace_back(c);
+    children.push_back(c);
   }
 
   ~AstNode()
@@ -73,11 +77,11 @@ struct ParseState
 {
   std::vector<std::unique_ptr<AstNode>> nodes;
 
-  template<typename T>
-  AstNode* make(int kind, std::initializer_list<T> val)
+  AstNode* make(int kind, std::initializer_list<AstNode*> val)
   {
     auto r = new AstNode(kind, val);
     nodes.emplace_back(r);
+    r->print();
     return r;
   }
 
@@ -86,6 +90,7 @@ struct ParseState
   {
     auto r = new AstNode(kind, val);
     nodes.emplace_back(r);
+    r->print();
     return r;
   }
 };

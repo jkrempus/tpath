@@ -76,7 +76,7 @@ Axis:
 
 NodeTest:
   NameTest
-| Identifier '(' ')'
+| Identifier '(' ')' { $$ = ps->make(AstNode::NodeType, {$1}); }
 /*TODO*/
 
 NameTest:
@@ -85,45 +85,45 @@ NameTest:
 
 PrimaryExpr:
   VariableReference {}
-| '(' Expr ')' { $$ = ps->make('(', {$2}); }
-| String {}                 
+| '(' Expr ')' { $$ = $2; }
+| String
 | Int
 | Float
-| FunctionCall {}
+| FunctionCall
 
-FunctionCall: Identifier '(' ArgList ')'
+FunctionCall: Identifier '(' ArgList ')' { $$ = ps->make(AstNode::Call, {$1, $3}); }
 
 ArgList:
-  /*empty*/
+  /*empty*/ { $$ = ps->make(AstNode::ArgList, {}); }
 | NonEmptyArgList 
 
 NonEmptyArgList:
-  Expr
-| NonEmptyArgList ',' Expr
+  Expr { $$ = ps->make(AstNode::ArgList, {$1}); }
+| NonEmptyArgList ',' Expr { $1->add_child($3); $$ = $1; }
 
-VariableReference: '$' Identifier
+VariableReference: '$' Identifier { $$ = ps->make('$', {$2}); }
 
 Expr: OrExpr { if($1) { printf("Expr\n"); $1->print(); } $$ = $1; }
 
 OrExpr:
   AndExpr
-| OrExpr Or AndExpr
+| OrExpr Or AndExpr { $$ = ps->make(Or, {$1, $3}); }
 
 AndExpr:
   EqualityExpr
-| AndExpr And EqualityExpr
+| AndExpr And EqualityExpr { $$ = ps->make(And, {$1, $3}); }
 
 EqualityExpr:
   RelationalExpr
-| EqualityExpr '=' RelationalExpr
-| EqualityExpr NE RelationalExpr
+| EqualityExpr '=' RelationalExpr { $$ = ps->make('=', {$1, $3}); }
+| EqualityExpr NE RelationalExpr { $$ = ps->make(NE, {$1, $3}); }
 
 RelationalExpr:
   AdditiveExpr
-| RelationalExpr '<' AdditiveExpr
-| RelationalExpr '>' AdditiveExpr
-| RelationalExpr LE AdditiveExpr
-| RelationalExpr GE AdditiveExpr
+| RelationalExpr '<' AdditiveExpr { $$ = ps->make('<', {$1, $3}); }
+| RelationalExpr '>' AdditiveExpr { $$ = ps->make('>', {$1, $3}); }
+| RelationalExpr LE AdditiveExpr { $$ = ps->make(LE, {$1, $3}); }
+| RelationalExpr GE AdditiveExpr { $$ = ps->make(GE, {$1, $3}); }
 
 AdditiveExpr:
   MultiplicativeExpr

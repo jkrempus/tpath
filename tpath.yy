@@ -2,7 +2,7 @@
 %define api.value.type {AstNode*}
 
 %token String Identifier Int Float
-%token Or And NE LE GE Div Mod DoubleSep DoubleDot Node
+%token Or And NE LE GE Mul Div Mod DoubleSep DoubleDot
 %token Parent Self Child Ancestor Descendant DescendantOrSelf 
 
 %debug
@@ -74,7 +74,7 @@ Axis:
 
 NodeTest:
   NameTest
-| Node '(' ')' { $$ = $1; }
+| '*' { $$ = ps->make('*'); }
 
 NameTest:
   Identifier
@@ -129,7 +129,7 @@ AdditiveExpr:
 
 MultiplicativeExpr:
   UnaryExpr
-| MultiplicativeExpr '*' UnaryExpr { $$ = ps->make('*', {$1, $3}); }
+| MultiplicativeExpr Mul UnaryExpr { $$ = ps->make('*', {$1, $3}); }
 | MultiplicativeExpr Div UnaryExpr { $$ = ps->make(Div, {$1, $3}); }
 | MultiplicativeExpr Mod UnaryExpr { $$ = ps->make(Mod, {$1, $3}); }
 

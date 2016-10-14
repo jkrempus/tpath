@@ -30,6 +30,7 @@ struct AstNode
       CASE(NE)
       CASE(LE)
       CASE(GE)
+      CASE(Mul)
       CASE(Div)
       CASE(Mod)
       CASE(DoubleSep)
@@ -43,7 +44,6 @@ struct AstNode
       CASE(Filt)
       CASE(ArgList)
       CASE(Call)
-      CASE(Node)
       CASE(AbsPath)
       CASE(RelPath)
       CASE(Step)
@@ -155,7 +155,7 @@ struct ParseState
     return make(AstNode::Step,
     {
       make(axis),
-      make(Node),
+      make('*'),
       make(AstNode::PredicateList, {})
     });
   }

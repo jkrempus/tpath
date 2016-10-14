@@ -10,11 +10,10 @@ struct AstNode
     Filt = DescendantOrSelf + 1,
     ArgList,
     Call,
-    NodeType,
     AbsPath,
     RelPath,
     Step,
-    PredicateList,
+    PredicateList
   };
 
   static const char* enum_to_str(int val)
@@ -35,6 +34,7 @@ struct AstNode
       CASE(Mod)
       CASE(DoubleSep)
       CASE(DoubleDot)
+      CASE(DoubleColon)
       CASE(Parent)
       CASE(Self)
       CASE(Child)
@@ -44,7 +44,7 @@ struct AstNode
       CASE(Filt)
       CASE(ArgList)
       CASE(Call)
-      CASE(NodeType)
+      CASE(Node)
       CASE(AbsPath)
       CASE(RelPath)
       CASE(Step)
@@ -139,5 +139,30 @@ struct ParseState
     auto r = new AstNode(kind, (long long) 0);
     nodes.emplace_back(r);
     return r;
+  }
+
+  AstNode* make_abbr_abs_path(AstNode* rel_path)
+  {
+    auto& c = rel_path->children;
+    c.insert(c.begin(), make_any_node_step(DescendantOrSelf));
+    return make(AstNode::AbsPath, {rel_path});
+  }
+  
+  AstNode* make_abbr_rel_path(AstNode* rel_path, AstNode* step)
+  {
+    auto& c = rel_path->children;
+    c.push_back(make_any_node_step(DescendantOrSelf));
+    c.push_back(step);
+    return rel_path;
+  }
+
+  AstNode* make_any_node_step(int axis)
+  {
+    return make(AstNode::Step,
+    {
+      make(axis),
+      make(Node),
+      make(AstNode::PredicateList, {})
+    });
   }
 };

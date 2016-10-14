@@ -2,8 +2,8 @@
 %define api.value.type {AstNode*}
 
 %token String Identifier Int Float
-%token Or And NE LE GE Div Mod DoubleSep DoubleDot
-%token Parent Self Child Ancestor Descendant DescendantOrSelf
+%token Or And NE LE GE Div Mod DoubleSep DoubleDot DoubleColon Node
+%token Parent Self Child Ancestor Descendant DescendantOrSelf 
 
 %debug
 %error-verbose
@@ -43,32 +43,24 @@ Path:
 AbsPath:
   '/' { $$ = ps->make(AstNode::AbsPath, {ps->make(AstNode::RelPath, {})}); }
 | '/' RelPath { $$ = ps->make(AstNode::AbsPath, {$2}); }
-| AbbrAbsPath /*TODO*/
+| DoubleSep RelPath { $$ = ps->make_abbr_abs_path($2); }
 
 RelPath:
   Step { $$ = ps->make(AstNode::RelPath, {$1}); }
 | RelPath '/' Step { $1->add_child($3); $$ = $1; }
-| AbbrRelPath /*TODO*/
+| RelPath DoubleSep Step { $$ = ps->make_abbr_rel_path($1, $3); }
 
 Step:
-  Axis NodeTest PredicateList { $$ = ps->make(AstNode::Step, {$1, $2, $3}); }
-| AbbrStep
+  Axis DoubleColon NodeTest PredicateList { $$ = ps->make(AstNode::Step, {$1, $3, $4}); }
+| NodeTest PredicateList { $$ = ps->make(AstNode::Step, {ps->make(Child), $1, $2}); }
+| '.' { $$ = ps->make_any_node_step(Self); }
+| DoubleDot { $$ = ps->make_any_node_step(Parent); }
 
 PredicateList:
   /*empty*/ { $$ = ps->make(AstNode::PredicateList, {}); }
 | PredicateList Predicate  { $1->add_child($2); $$ = $1; }
 
 Predicate: '[' Expr ']' { $$ = $2; }
-
-AbbrAbsPath:
-  DoubleSep RelPath
-
-AbbrRelPath:
-  RelPath DoubleSep Step
-
-AbbrStep:
-  '.'
-| DoubleDot
 
 Axis:
   Parent
@@ -80,8 +72,7 @@ Axis:
 
 NodeTest:
   NameTest
-| Identifier '(' ')' { $$ = ps->make(AstNode::NodeType, {$1}); }
-/*TODO*/
+| Node '(' ')' { $$ = $1; }
 
 NameTest:
   Identifier

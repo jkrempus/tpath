@@ -34,7 +34,6 @@ struct AstNode
       CASE(Mod)
       CASE(DoubleSep)
       CASE(DoubleDot)
-      CASE(DoubleColon)
       CASE(Parent)
       CASE(Self)
       CASE(Child)
@@ -55,7 +54,6 @@ struct AstNode
   }
 
   int kind;
-  bool is_root = true;
   int idx = 0;
   union
   {
@@ -74,7 +72,6 @@ struct AstNode
   {
     for(auto e : children)
     {
-      e->is_root = false;
       this->children.push_back(e);
     }
   }
@@ -100,11 +97,7 @@ struct AstNode
     }
   }
  
-  void add_child(AstNode* c)
-  {
-    c->is_root = false;
-    children.push_back(c);
-  }
+  void add_child(AstNode* c) { children.push_back(c); }
 
   ~AstNode()
   {
@@ -117,6 +110,7 @@ struct AstNode
 
 struct ParseState
 {
+  AstNode* result;
   std::vector<std::unique_ptr<AstNode>> nodes;
 
   AstNode* make(int kind, std::initializer_list<AstNode*> val)

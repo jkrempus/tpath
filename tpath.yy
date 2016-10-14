@@ -2,7 +2,7 @@
 %define api.value.type {AstNode*}
 
 %token String Identifier Int Float
-%token Or And NE LE GE Div Mod DoubleSep DoubleDot DoubleColon Node
+%token Or And NE LE GE Div Mod DoubleSep DoubleDot Node
 %token Parent Self Child Ancestor Descendant DescendantOrSelf 
 
 %debug
@@ -36,6 +36,8 @@
 %parse-param {yyscan_t scanner} {ParseState* ps}
 
 %%
+TopLevel: Path { ps->result = $1; }
+
 Path:
   RelPath
 | AbsPath
@@ -51,7 +53,7 @@ RelPath:
 | RelPath DoubleSep Step { $$ = ps->make_abbr_rel_path($1, $3); }
 
 Step:
-  Axis DoubleColon NodeTest PredicateList { $$ = ps->make(AstNode::Step, {$1, $3, $4}); }
+  Axis NodeTest PredicateList { $$ = ps->make(AstNode::Step, {$1, $2, $3}); }
 | NodeTest PredicateList { $$ = ps->make(AstNode::Step, {ps->make(Child), $1, $2}); }
 | '.' { $$ = ps->make_any_node_step(Self); }
 | DoubleDot { $$ = ps->make_any_node_step(Parent); }
@@ -164,12 +166,9 @@ int main (int argc, char** argv)
 
   yylex_destroy(scanner);
 
-  for(auto& e : ps.nodes)
-    if(e->is_root)
-    {
-      printf("Top level node:\n");
-      e->print();
-    }
+
+  printf("Top level node:\n");
+  ps.result->print();
 
   return 0;
 }

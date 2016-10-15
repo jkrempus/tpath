@@ -38,10 +38,6 @@
 %%
 Start: Expr { ps->result = $1; }
 
-Path:
-  RelPath
-| AbsPath
-
 AbsPath:
   '/' { $$ = ps->make(AstNode::AbsPath, {ps->make(AstNode::RelPath, {})}); }
 | '/' RelPath { $$ = ps->make(AstNode::AbsPath, {$2}); }
@@ -53,41 +49,19 @@ RelPath:
 | RelPath DoubleSep Step { $$ = ps->make_abbr_rel_path($1, $3); }
 
 Step_0:
-  Axis NodeTest { $$ = ps->make(AstNode::Step, {$1, $2}); }
+  Axis IdentifierOrWildcard { $$ = ps->make(AstNode::Step, {$1, $2}); }
 | Axis String { $$ = ps->make(AstNode::Step, {$1, $2}); }
-| NodeTest { $$ = ps->make(AstNode::Step, {ps->make(Child), $1}); }
+| IdentifierOrWildcard { $$ = ps->make(AstNode::Step, {ps->make(Child), $1}); }
 | '.' { $$ = ps->make_any_node_step(Self); }
 | DoubleDot { $$ = ps->make_any_node_step(Parent); }
 
-Step:
-  Step_0
-| Step Predicate { $1->add_child($2); $$ = $1; }
+Step: Step_0 | Step Predicate { $1->add_child($2); $$ = $1; }
 
 Predicate: '[' Expr ']' { $$ = $2; }
 
-Axis:
-  Parent
-| Self
-| Child
-| Ancestor
-| Descendant
-| DescendantOrSelf
+Axis: Parent | Self | Child | Ancestor | Descendant | DescendantOrSelf
 
-NodeTest:
-  Identifier
-| '*' { $$ = ps->make('*'); }
-
-/*NameTest:
-  Identifier
-TODO*/
-
-PrimaryExpr:
-  VariableReference {}
-| '(' Expr ')' { $$ = $2; }
-| String
-| Int
-| Float
-| FunctionCall
+IdentifierOrWildcard: Identifier | '*' { $$ = ps->make('*'); }
 
 FunctionCall: FunctionCall_0 ')'
 
@@ -98,11 +72,7 @@ FunctionCall_0:
 
 VariableReference: '$' Identifier { $$ = ps->make('$', {$2}); }
 
-Expr: OrExpr
-
-OrExpr:
-  AndExpr
-| OrExpr Or AndExpr { $$ = ps->make(Or, {$1, $3}); }
+Expr: AndExpr | Expr Or AndExpr { $$ = ps->make(Or, {$1, $3}); }
 
 AndExpr:
   EqualityExpr
@@ -131,24 +101,25 @@ MultiplicativeExpr:
 | MultiplicativeExpr Div UnaryExpr { $$ = ps->make(Div, {$1, $3}); }
 | MultiplicativeExpr Mod UnaryExpr { $$ = ps->make(Mod, {$1, $3}); }
 
-UnaryExpr:
-  UnionExpr
-| '-' UnaryExpr { $$ = ps->make('-', {$2}); }
+UnaryExpr: UnionExpr | '-' UnaryExpr { $$ = ps->make('-', {$2}); }
 
-UnionExpr:
-  PathExpr
-| UnionExpr '|' PathExpr { $$ = ps->make('|', {$1, $3}); }
+UnionExpr: PathExpr | UnionExpr '|' PathExpr { $$ = ps->make('|', {$1, $3}); }
 
 PathExpr:
-  Path
+  RelPath
+| AbsPath
 | FilterExpr
 | FilterExpr '/' RelPath { $$ = ps->make('/', {$1, $3}); }
 | FilterExpr DoubleSep RelPath { $$ = ps->make(DoubleSep, {$1, $3}); }
 
 FilterExpr:
-  PrimaryExpr
+  VariableReference {}
+| '(' Expr ')' { $$ = $2; }
+| String
+| Int
+| Float
+| FunctionCall
 | FilterExpr Predicate { $$ = ps->make(AstNode::Filt, {$1, $2}); }
-
 %%
 
 int main (int argc, char** argv)

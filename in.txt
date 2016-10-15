@@ -1,1 +1,1 @@
-//child::green/descendant-or-self::blue//black/../ancestor::red/parent::*[somefunc("as\"df", name(), 1234, (-4321.1 + 356 mul 10) div 1.1) and purple()]
+//child::green/descendant-or-self::blue//black/../ancestor::"Crimson Red"/parent::*[somefunc("as\"df", name(), 1234, (-4321.1 + 356 mul 10) div 1.1) and purple()]

@@ -18,6 +18,7 @@ mod{NW}               unput_last; *yylval = nullptr; return Mod;
 mul{NW}               unput_last; *yylval = ps->make(Mul); return Mul;
 parent::              *yylval = ps->make(Parent); return Parent;
 self::                *yylval = ps->make(Self); return Self;
+::                    |
 child::               *yylval = ps->make(Child); return Child;
 ancestor::            *yylval = ps->make(Ancestor); return Ancestor;
 descendant::          *yylval = ps->make(Descendant); return Descendant;

@@ -36,7 +36,7 @@
 %parse-param {yyscan_t scanner} {ParseState* ps}
 
 %%
-TopLevel: Path { ps->result = $1; }
+Start: Expr { ps->result = $1; }
 
 Path:
   RelPath
@@ -54,6 +54,7 @@ RelPath:
 
 Step_0:
   Axis NodeTest { $$ = ps->make(AstNode::Step, {$1, $2}); }
+| Axis String { $$ = ps->make(AstNode::Step, {$1, $2}); }
 | NodeTest { $$ = ps->make(AstNode::Step, {ps->make(Child), $1}); }
 | '.' { $$ = ps->make_any_node_step(Self); }
 | DoubleDot { $$ = ps->make_any_node_step(Parent); }

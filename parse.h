@@ -152,11 +152,6 @@ struct ParseState
 
   AstNode* make_any_node_step(int axis)
   {
-    return make(AstNode::Step,
-    {
-      make(axis),
-      make('*'),
-      make(AstNode::PredicateList, {})
-    });
+    return make(AstNode::Step, { make(axis), make('*'), });
   }
 };

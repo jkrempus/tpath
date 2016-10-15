@@ -52,15 +52,15 @@ RelPath:
 | RelPath '/' Step { $1->add_child($3); $$ = $1; }
 | RelPath DoubleSep Step { $$ = ps->make_abbr_rel_path($1, $3); }
 
-Step:
-  Axis NodeTest PredicateList { $$ = ps->make(AstNode::Step, {$1, $2, $3}); }
-| NodeTest PredicateList { $$ = ps->make(AstNode::Step, {ps->make(Child), $1, $2}); }
+Step_0:
+  Axis NodeTest { $$ = ps->make(AstNode::Step, {$1, $2}); }
+| NodeTest { $$ = ps->make(AstNode::Step, {ps->make(Child), $1}); }
 | '.' { $$ = ps->make_any_node_step(Self); }
 | DoubleDot { $$ = ps->make_any_node_step(Parent); }
 
-PredicateList:
-  /*empty*/ { $$ = ps->make(AstNode::PredicateList, {}); }
-| PredicateList Predicate  { $1->add_child($2); $$ = $1; }
+Step:
+  Step_0
+| Step Predicate { $1->add_child($2); $$ = $1; }
 
 Predicate: '[' Expr ']' { $$ = $2; }
 
@@ -73,12 +73,12 @@ Axis:
 | DescendantOrSelf
 
 NodeTest:
-  NameTest
+  Identifier
 | '*' { $$ = ps->make('*'); }
 
-NameTest:
+/*NameTest:
   Identifier
-/*TODO*/
+TODO*/
 
 PrimaryExpr:
   VariableReference {}
@@ -88,15 +88,12 @@ PrimaryExpr:
 | Float
 | FunctionCall
 
-FunctionCall: Identifier '(' ArgList ')' { $$ = ps->make(AstNode::Call, {$1, $3}); }
+FunctionCall: FunctionCall_0 ')'
 
-ArgList:
-  /*empty*/ { $$ = ps->make(AstNode::ArgList, {}); }
-| NonEmptyArgList 
-
-NonEmptyArgList:
-  Expr { $$ = ps->make(AstNode::ArgList, {$1}); }
-| NonEmptyArgList ',' Expr { $1->add_child($3); $$ = $1; }
+FunctionCall_0:
+  Identifier '(' { $$ = ps->make(AstNode::Call, {$1}); }
+| Identifier '(' Expr { $$ = ps->make(AstNode::Call, {$1, $3}); }
+| FunctionCall_0 ',' Expr { $1->add_child($3); $$ = $1; }
 
 VariableReference: '$' Identifier { $$ = ps->make('$', {$2}); }
 

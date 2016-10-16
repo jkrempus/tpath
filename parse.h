@@ -148,3 +148,5 @@ struct ParseState
     return make(AstNode::Step, { make(axis), make('*'), });
   }
 };
+
+std::shared_ptr<AstNode> parse(FILE* file);

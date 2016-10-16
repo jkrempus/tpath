@@ -122,22 +122,18 @@ FilterExpr:
 | FilterExpr Predicate { $$ = ps->make(AstNode::Filt, {$1, $2}); }
 %%
 
-int main (int argc, char** argv)
+std::shared_ptr<AstNode> parse(FILE* file)
 {
   ParseState ps;
   yyscan_t scanner;
   int tok;
 
   yylex_init(&scanner);
-  yyset_in(argc > 1 ? fopen(argv[1], "r") : stdin, scanner );
+  yyset_in(file, scanner );
 
   while(!feof(stdin)) yyparse(scanner, &ps);
 
   yylex_destroy(scanner);
 
-
-  printf("Top level node:\n");
-  ps.result->print();
-
-  return 0;
+  return ps.result;
 }

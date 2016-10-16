@@ -60,14 +60,14 @@ struct AstNode
     long long int_;
     double float_;
     std::string str;
-    std::vector<AstNode*> children;
+    std::vector<std::shared_ptr<AstNode>> children;
   };
 
   AstNode(){}
   AstNode(int kind, long long int_) : kind(kind), int_(int_), idx(0) {}
   AstNode(int kind, double float_) : kind(kind), float_(float_), idx(1) {}
   AstNode(int kind, const char* str) : kind(kind), str(str), idx(2) {}
-  AstNode(int kind, std::initializer_list<AstNode*> children)
+  AstNode(int kind, std::initializer_list<std::shared_ptr<AstNode>> children)
   : kind(kind), children(), idx(3)
   {
     for(auto e : children)
@@ -97,7 +97,7 @@ struct AstNode
     }
   }
  
-  void add_child(AstNode* c) { children.push_back(c); }
+  void add_child(std::shared_ptr<AstNode> c) { children.push_back(c); }
 
   ~AstNode()
   {
@@ -110,39 +110,32 @@ struct AstNode
 
 struct ParseState
 {
-  AstNode* result;
-  std::vector<std::unique_ptr<AstNode>> nodes;
+  std::shared_ptr<AstNode> result;
 
-  AstNode* make(int kind, std::initializer_list<AstNode*> val)
+  std::shared_ptr<AstNode> make(int kind, std::initializer_list<std::shared_ptr<AstNode>> val)
   {
-    auto r = new AstNode(kind, val);
-    nodes.emplace_back(r);
-    return r;
+    return std::make_shared<AstNode>(kind, val);
   }
 
   template<typename T>
-  AstNode* make(int kind, T val)
+  std::shared_ptr<AstNode> make(int kind, T val)
   {
-    auto r = new AstNode(kind, val);
-    nodes.emplace_back(r);
-    return r;
+    return std::make_shared<AstNode>(kind, val);
   }
   
-  AstNode* make(int kind)
+  std::shared_ptr<AstNode> make(int kind)
   {
-    auto r = new AstNode(kind, (long long) 0);
-    nodes.emplace_back(r);
-    return r;
+    return std::make_shared<AstNode>(kind, (long long) 0);
   }
 
-  AstNode* make_abbr_abs_path(AstNode* rel_path)
+  std::shared_ptr<AstNode> make_abbr_abs_path(std::shared_ptr<AstNode> rel_path)
   {
     auto& c = rel_path->children;
     c.insert(c.begin(), make_any_node_step(DescendantOrSelf));
     return make(AstNode::AbsPath, {rel_path});
   }
   
-  AstNode* make_abbr_rel_path(AstNode* rel_path, AstNode* step)
+  std::shared_ptr<AstNode> make_abbr_rel_path(std::shared_ptr<AstNode> rel_path, std::shared_ptr<AstNode> step)
   {
     auto& c = rel_path->children;
     c.push_back(make_any_node_step(DescendantOrSelf));
@@ -150,7 +143,7 @@ struct ParseState
     return rel_path;
   }
 
-  AstNode* make_any_node_step(int axis)
+  std::shared_ptr<AstNode> make_any_node_step(int axis)
   {
     return make(AstNode::Step, { make(axis), make('*'), });
   }

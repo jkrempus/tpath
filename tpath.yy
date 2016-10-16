@@ -1,5 +1,4 @@
-
-%define api.value.type {AstNode*}
+%define api.value.type {std::shared_ptr<AstNode>}
 
 %token String Identifier Int Float
 %token Or And NE LE GE Mul Div Mod DoubleSep DoubleDot
@@ -10,6 +9,7 @@
 
 %code requires 
 {
+  #include <memory>
   struct AstNode;
   struct ParseState;
   typedef void* yyscan_t;

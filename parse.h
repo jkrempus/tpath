@@ -103,7 +103,7 @@ struct Ast
   {
     if(idx == 2)
       str.~basic_string();
-    else if(idx == 2)
+    else if(idx == 3)
       children.~vector();
   }
 };
@@ -134,7 +134,7 @@ struct ParseState
     c.insert(c.begin(), make_any_node_step(DescendantOrSelf));
     return make(Ast::AbsPath, {rel_path});
   }
-  
+
   std::shared_ptr<Ast> make_abbr_rel_path(std::shared_ptr<Ast> rel_path, std::shared_ptr<Ast> step)
   {
     auto& c = rel_path->children;

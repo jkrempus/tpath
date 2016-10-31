@@ -97,7 +97,7 @@ AdditiveExpr:
 
 MultiplicativeExpr:
   UnaryExpr
-| MultiplicativeExpr Mul UnaryExpr { $$ = ps->make('*', {$1, $3}); }
+| MultiplicativeExpr Mul UnaryExpr { $$ = ps->make(Mul, {$1, $3}); }
 | MultiplicativeExpr Div UnaryExpr { $$ = ps->make(Div, {$1, $3}); }
 | MultiplicativeExpr Mod UnaryExpr { $$ = ps->make(Mod, {$1, $3}); }
 

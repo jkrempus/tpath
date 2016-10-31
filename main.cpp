@@ -4,105 +4,194 @@ using nonstd::optional;
 using nonstd::nullopt;
 using nonstd::make_optional;
 
-template<typename Tree>
-struct Node
+template<typename Iterator>
+struct Range
 {
-  typename Tree::node node;
-  std::string name;
-  std::shared_ptr<Node> parent; 
+  Iterator begin_;
+  Iterator end_;
+  Iterator begin(){ return begin_; }
+  Iterator end(){ return end_; }
+  Range advanced(int n = 1){ return { begin_ + n, end_ }; }
 };
 
-template<typename Tree>
-struct Value
-{
-  std::vector<Node<Tree>> node;
-  double num;
-  std::string str;
-};
+using AstRange = Range<const std::shared_ptr<Ast>*>;
 
-struct AstRange
+AstRange children_range(const std::shared_ptr<Ast>& ast)
 {
-  const std::shared_ptr<Ast>* begin_;
-  const std::shared_ptr<Ast>* end_;
-  const std::shared_ptr<Ast>* begin(){ return begin_; }
-  const std::shared_ptr<Ast>* end(){ return end_; }
-  AstRange advanced(int n = 1){ return { begin_ + n, end_ }; }
-  static AstRange from_vec(
-    const std::vector<std::shared_ptr<Ast>>& vec)
+  return { &ast->children[0], &ast->children[0] + ast->children.size() };
+}
+
+struct DummyTree
+{
+  using node_type = int;
+  
+  template<typename Func>
+  static void iterate_children(node_type node, const Func& func) { }
+
+  static optional<node_type> get_child(node_type node, const std::string& name)
   {
-    return { &vec[0], &vec[0] + vec.size() };
+    return nullopt;
   }
 };
 
 template<typename Tree>
 struct Context
 {
+  using node_type = typename Tree::node_type;
+
+  struct NodeStorage
+  {
+    node_type node;
+    std::string name;
+    std::shared_ptr<NodeStorage> parent; 
+  };
+
+  using Node = std::shared_ptr<NodeStorage>;
+
+  static Node make_node(
+    const node_type& node,
+    const std::string& name,
+    const Node& parent)
+  {
+    auto r = std::make_shared<NodeStorage>();
+    r->node = node;
+    r->name = name;
+    r->parent = parent;
+    return r;
+  }
+
+  struct Value
+  {
+    optional<std::vector<Node>> nodes;
+    optional<double> num;
+    optional<std::string> str;
+  };
+
+  optional<std::string> err;
 
   bool node_accepted(
     const optional<std::string>& name,
     AstRange predicates,
-    const Node<Tree>& context_node)
+    const Node& context_node)
   {
-  }
-
-  void axis_descendant(
-    AstRange path, const optional<std::string>& name, AstRange predicates,
-    const Node<Tree>& context_node, std::vector<Node<Tree>>& dst)
-  {
+    if(!context_node) return false;
+    return true;
   }
 
   void evaluate_path(
-    AstRange path, const Node<Tree>& context_node,
-    std::vector<Node<Tree>>& dst)
+    AstRange path, const Node& context_node, std::vector<Node>& dst)
   {
-    if(path.begin() == path.end()) dst.push(context_node);
+    if(path.begin() == path.end()) dst.push_back(context_node);
     else
     {
-      auto step = path.begin()->get();
-      auto axis = step->children[0].get();
+      auto& step = *path.begin();
+      auto& axis = step->children[0];
       optional<std::string> name;
       auto c = step->children[1].get();
       if(c->kind == Identifier || c->kind == String) name = c->str;
-      auto predicates = AstRange::from_vec(step->children).advanced(2);
+      auto predicates = children_range(step).advanced(2);
 
-      //Parent | Self | Child | Ancestor | Descendant | DescendantOrSelf
-      if(axis->kind == Parent)
+      auto recurse = [&](const Node& node)
       {
-        auto parent_node = context_node.parent;
-        if(node_accepted(name, predicates, parent_node))
-          evaluate_path(path.advanced(1), parent_node, dst);
+        bool accepted = node_accepted(name, predicates, node);
+        if(err) return false;
+        if(accepted)
+        {
+          evaluate_path(path.advanced(1), node, dst);
+          if(err) return false;
+        }
+
+        return true;
+      };
+
+      if(axis->kind == Self)
+      {
+        if(!recurse(context_node)) return;
+      }
+      else if(axis->kind == Parent)
+      {
+        if(!recurse(context_node->parent)) return;
       }
       else if(axis->kind == Ancestor)
       {
-        for(auto node = context_node.parent; node; node = node->parent)
-          if(node_accepted(name, predicates, node))
-            evaluate_path(path.advanced(1), node, dst);
+        for(auto node = context_node->parent; node; node = node->parent)
+          if(!recurse(node)) return;
       }
       else if(axis->kind == Child)
       {
-        Tree::iterate_children(context_node,
-          [&](const typename Tree::node& node, const std::string& str)
+        if(name)
         {
-          
-        });
+          if(auto opt = Tree::get_child(context_node->node, *name))
+          {
+            if(!recurse(make_node(*opt, *name, context_node))) return;
+          }
+        }
+        else
+        {
+          Tree::iterate_children(context_node->node,
+            [&](const node_type& node, const std::string& node_name)
+          {
+            return recurse(make_node(node, node_name, context_node));
+          });
+
+          if(err) return;
+        }
       }
       else
       {
-        if(axis->kind == Self || axis->kind == DescendantOrSelf)
-          if(node_accepted(name, predicates, context_node))
-            evaluate_path(path.advanced(1), context_node, dst);
+        std::vector<Node> stack; 
+        stack.push_back(context_node);
+        bool skip_next = axis->kind == Descendant;
 
-        if(axis->kind == Descendant || axis->DescendantOrSelf)
+        while(stack.size() > 0)
         {
-          
+          auto node = stack.back();
+          stack.pop_back();
+
+          if(!skip_next)
+          {
+            if(!recurse(node)) return;
+          }
+
+          skip_next = false;
+          Tree::iterate_children(node->node,
+            [&](const node_type& child_node, const std::string& child_name)
+          {
+            stack.push_back(make_node(child_node, child_name, context_node));
+            return true;
+          });
         }
       }
     }
+  }
+
+  Value evaluate_impl(
+    const std::shared_ptr<Ast>& ast, const Node& context_node)
+  {
+    if(ast->kind == Ast::AbsPath)
+    {
+      auto node = context_node;
+      for(; node->parent; node = node->parent) {}
+      Value r;
+      r.nodes = std::vector<Node>();
+      evaluate_path(children_range(ast->children[0]), node, *r.nodes);
+      return r;
+    }
+    else if(ast->kind == Ast::RelPath)
+    {
+      Value r;
+      r.nodes = std::vector<Node>();
+      evaluate_path(children_range(ast), context_node, *r.nodes);
+      return r;
+    }
+
+    return Value();
   };
 
-  Value<Tree> evaluate(Ast* ast, const Node<Tree>& context_node)
+  Value evaluate(
+    const std::shared_ptr<Ast>& ast, node_type node, const std::string& name)
   {
-    return Value<Tree>();
+    return evaluate_impl(ast, make_node(node, name, nullptr));
   };
 };
 
@@ -111,5 +200,7 @@ int main(int argc, char** argv)
   auto ast = parse(argc > 1 ? fopen(argv[1], "r") : stdin);
   printf("Top level node:\n");
   ast->print();
+  Context<DummyTree> context;
+  context.evaluate(ast, 0, "root");
   return 0;
 }

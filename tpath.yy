@@ -1,4 +1,4 @@
-%define api.value.type {std::shared_ptr<AstNode>}
+%define api.value.type {std::shared_ptr<Ast>}
 
 %token String Identifier Int Float
 %token Or And NE LE GE Mul Div Mod DoubleSep DoubleDot
@@ -10,7 +10,7 @@
 %code requires 
 {
   #include <memory>
-  struct AstNode;
+  struct Ast;
   struct ParseState;
   typedef void* yyscan_t;
 
@@ -39,19 +39,19 @@
 Start: Expr { ps->result = $1; }
 
 AbsPath:
-  '/' { $$ = ps->make(AstNode::AbsPath, {ps->make(AstNode::RelPath, {})}); }
-| '/' RelPath { $$ = ps->make(AstNode::AbsPath, {$2}); }
+  '/' { $$ = ps->make(Ast::AbsPath, {ps->make(Ast::RelPath, {})}); }
+| '/' RelPath { $$ = ps->make(Ast::AbsPath, {$2}); }
 | DoubleSep RelPath { $$ = ps->make_abbr_abs_path($2); }
 
 RelPath:
-  Step { $$ = ps->make(AstNode::RelPath, {$1}); }
+  Step { $$ = ps->make(Ast::RelPath, {$1}); }
 | RelPath '/' Step { $1->add_child($3); $$ = $1; }
 | RelPath DoubleSep Step { $$ = ps->make_abbr_rel_path($1, $3); }
 
 Step_0:
-  Axis IdentifierOrWildcard { $$ = ps->make(AstNode::Step, {$1, $2}); }
-| Axis String { $$ = ps->make(AstNode::Step, {$1, $2}); }
-| IdentifierOrWildcard { $$ = ps->make(AstNode::Step, {ps->make(Child), $1}); }
+  Axis IdentifierOrWildcard { $$ = ps->make(Ast::Step, {$1, $2}); }
+| Axis String { $$ = ps->make(Ast::Step, {$1, $2}); }
+| IdentifierOrWildcard { $$ = ps->make(Ast::Step, {ps->make(Child), $1}); }
 | '.' { $$ = ps->make_any_node_step(Self); }
 | DoubleDot { $$ = ps->make_any_node_step(Parent); }
 
@@ -66,8 +66,8 @@ IdentifierOrWildcard: Identifier | '*' { $$ = ps->make('*'); }
 FunctionCall: FunctionCall_0 ')'
 
 FunctionCall_0:
-  Identifier '(' { $$ = ps->make(AstNode::Call, {$1}); }
-| Identifier '(' Expr { $$ = ps->make(AstNode::Call, {$1, $3}); }
+  Identifier '(' { $$ = ps->make(Ast::Call, {$1}); }
+| Identifier '(' Expr { $$ = ps->make(Ast::Call, {$1, $3}); }
 | FunctionCall_0 ',' Expr { $1->add_child($3); $$ = $1; }
 
 VariableReference: '$' Identifier { $$ = ps->make('$', {$2}); }
@@ -119,10 +119,10 @@ FilterExpr:
 | Int
 | Float
 | FunctionCall
-| FilterExpr Predicate { $$ = ps->make(AstNode::Filt, {$1, $2}); }
+| FilterExpr Predicate { $$ = ps->make(Ast::Filt, {$1, $2}); }
 %%
 
-std::shared_ptr<AstNode> parse(FILE* file)
+std::shared_ptr<Ast> parse(FILE* file)
 {
   ParseState ps;
   yyscan_t scanner;

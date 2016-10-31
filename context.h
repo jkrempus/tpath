@@ -21,19 +21,6 @@ AstRange children_range(const std::shared_ptr<Ast>& ast)
   return { &ast->children[0], &ast->children[0] + ast->children.size() };
 }
 
-struct DummyTree
-{
-  using node_type = int;
-  
-  template<typename Func>
-  static void iterate_children(node_type node, const Func& func) { }
-
-  static optional<node_type> get_child(node_type node, const std::string& name)
-  {
-    return nullopt;
-  }
-};
-
 template<typename Tree>
 struct Context
 {
@@ -194,13 +181,3 @@ struct Context
     return evaluate_impl(ast, make_node(node, name, nullptr));
   };
 };
-
-int main(int argc, char** argv)
-{
-  auto ast = parse(argc > 1 ? fopen(argv[1], "r") : stdin);
-  printf("Top level node:\n");
-  ast->print();
-  Context<DummyTree> context;
-  context.evaluate(ast, 0, "root");
-  return 0;
-}

@@ -1,8 +1,6 @@
 #include "parse.h"
 #include "optional-lite/optional.hpp"
-using nonstd::optional;
-using nonstd::nullopt;
-using nonstd::make_optional;
+#include "variant-lite/include/nonstd/variant.hpp"
 
 template<typename Iterator>
 struct Range
@@ -34,6 +32,7 @@ struct Context
   };
 
   using Node = std::shared_ptr<NodeStorage>;
+  using NodeVec = std::vector<Node>;
 
   static Node make_node(
     const node_type& node,
@@ -47,21 +46,43 @@ struct Context
     return r;
   }
 
-  struct Value
+#if 0
+  using Nodes = std::shared
+  using Value = nonstd::variant<
+    std::vector<Node>
+#endif
+
+  class Value
   {
-    optional<std::vector<Node>> nodes;
-    optional<double> num;
-    optional<std::string> str;
+    using Variant = nonstd::variant<NodeVec, double, std::string>;
+    std::shared_ptr<Variant> ptr;
+
+  public:
+    Value() = default;
+    Value(double a) : ptr(new Variant(a)) {} 
+    Value(const std::string& a) : ptr(new Variant(a)) {} 
+    Value(const NodeVec& a) : ptr(new Variant(a)) {}
+    Value(NodeVec&& a) : ptr(new Variant(std::move(a))) {}
+
+    NodeVec* nodes() { return nonstd::get_if<NodeVec>(ptr.get()); }
+    std::string* str() { return nonstd::get_if<std::string>(ptr.get()); }
+    double* num() { return nonstd::get_if<double>(ptr.get()); }
+    bool none() { return ptr == nullptr; }
   };
 
-  optional<std::string> err;
+  nonstd::optional<std::string> err;
 
   bool node_accepted(
-    const optional<std::string>& name,
+    const nonstd::optional<std::string>& name,
     AstRange predicates,
     const Node& context_node)
   {
     if(!context_node) return false;
+
+    for(auto& e : predicates)
+      if(evaluate_impl(e, context_node).none())
+        return false;
+
     return true;
   }
 
@@ -73,7 +94,7 @@ struct Context
     {
       auto& step = *path.begin();
       auto& axis = step->children[0];
-      optional<std::string> name;
+      nonstd::optional<std::string> name;
       auto c = step->children[1].get();
       if(c->kind == Identifier || c->kind == String) name = c->str;
       auto predicates = children_range(step).advanced(2);
@@ -159,16 +180,14 @@ struct Context
     {
       auto node = context_node;
       for(; node->parent; node = node->parent) {}
-      Value r;
-      r.nodes = std::vector<Node>();
-      evaluate_path(children_range(ast->children[0]), node, *r.nodes);
+      auto r = Value(NodeVec());
+      evaluate_path(children_range(ast->children[0]), node, *r.nodes());
       return r;
     }
     else if(ast->kind == Ast::RelPath)
     {
-      Value r;
-      r.nodes = std::vector<Node>();
-      evaluate_path(children_range(ast), context_node, *r.nodes);
+      auto r = Value(NodeVec());
+      evaluate_path(children_range(ast), context_node, *r.nodes());
       return r;
     }
 

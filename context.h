@@ -2,6 +2,8 @@
 #include "optional-lite/optional.hpp"
 #include "variant-lite/include/nonstd/variant.hpp"
 
+#include <unordered_map>
+
 template<typename Iterator>
 struct Range
 {
@@ -46,12 +48,6 @@ struct Context
     return r;
   }
 
-#if 0
-  using Nodes = std::shared
-  using Value = nonstd::variant<
-    std::vector<Node>
-#endif
-
   class Value
   {
     using Variant = nonstd::variant<NodeVec, double, std::string>;
@@ -70,7 +66,17 @@ struct Context
     bool none() { return ptr == nullptr; }
   };
 
+  struct Function
+  {
+    virtual Value call(
+      Context* context,
+      const Node& context_node, 
+      const Value* values,
+      int num_values) = 0;
+  };
+
   nonstd::optional<std::string> err;
+  std::unordered_map<std::string, Function> functions;
 
   bool node_accepted(
     const nonstd::optional<std::string>& name,

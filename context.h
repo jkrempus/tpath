@@ -3,6 +3,7 @@
 #include "variant-lite/include/nonstd/variant.hpp"
 
 #include <unordered_map>
+#include <unordered_set>
 
 template<typename Iterator>
 struct Range
@@ -50,13 +51,28 @@ struct Context
 
   DenseIntSet equality_ops;
   DenseIntSet comparison_ops;
+  DenseIntSet arithmetic_ops;
   DenseIntSet binary_ops;
 
   struct NodeStorage
   {
     node_type node;
     std::string name;
-    std::shared_ptr<NodeStorage> parent; 
+    std::shared_ptr<NodeStorage> parent;
+
+    std::string key()
+    {
+      std::string r;
+      for(auto node = this; node; node = node->parent.get())
+      {
+        char len[100];
+        sprintf(len, "%016llx\n", (long long)(node->name.size()));
+        r += len;
+        r += node->name.size();
+      }
+
+      return r;
+    } 
   };
 
   using Node = std::shared_ptr<NodeStorage>;
@@ -264,11 +280,61 @@ struct Context
         else if(auto num = a.num()) eq = *num == *b.num();
         else if(auto nodes = a.nodes())
         {
-          //TODO
-          eq = false;
+          std::unordered_set<std::string> aset;
+          for(auto& e : *a.nodes()) aset.insert(e->key());
+          
+          std::unordered_set<std::string> bset;
+          for(auto& e : *b.nodes()) bset.insert(e->key());
+
+          eq = aset == bset;
         }
+        else eq = true;
 
         return Value::bool_(ast->kind == '=' ? eq : !eq);
+      }
+      else if(comparison_ops.contains(ast->kind))
+      {
+        if(!a.same_type(b))
+        {
+          err = std::string(
+            "Arguments to a comparison operation have different types.");
+
+          return Value();
+        }
+        else if(auto str = a.str())
+          return Value::bool_(
+            ast->kind == '<' ? *str < *b.str() :
+            ast->kind == '>' ? *str > *b.str() :
+            ast->kind == LE ? *str <= *b.str() : *str >= *b.str());
+        else if(auto num = a.num())
+          return Value::bool_(
+            ast->kind == '<' ? *num < *b.num() :
+            ast->kind == '>' ? *num > *b.num() :
+            ast->kind == LE ? *num <= *b.num() : *num >= *b.num());
+        else
+        {
+          err = std::string(
+            "Arguments of comparison operations must be strings or numbers.");
+
+          return Value();
+        }
+      }
+      else if(ast->kind == Or) return !a.none() ? a : b;
+      else if(ast->kind == And) return !a.none() && !b.none() ? a : Value();
+      else if(arithmetic_ops.contains(ast->kind))
+      {
+        if(!a.num() || !b.num())
+        {
+          err = std::string(
+            "Arguments of arithmetic operations must be strings.");
+
+          return Value(); 
+        }
+
+        return Value(
+          ast->kind == '+' ? *a.num() + *b.num() :
+          ast->kind == '-' ? *a.num() - *b.num() :
+          ast->kind == Mul ? *a.num() * *b.num() : *a.num() / *b.num());
       }
     }
 
@@ -285,7 +351,15 @@ struct Context
   {
     equality_ops = DenseIntSet({'=', NE}); 
     comparison_ops = DenseIntSet({'>', '<', GE, LE});
-    binary_ops = DenseIntSet({equality_ops, comparison_ops});
+    arithmetic_ops = DenseIntSet({'+', '-', Mul, Div});
+
+    DenseIntSet logical_ops = DenseIntSet({Or, And});
+
+    binary_ops = DenseIntSet({
+      equality_ops,
+      comparison_ops,
+      arithmetic_ops,
+      logical_ops});
   }
 };
 

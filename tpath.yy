@@ -101,7 +101,7 @@ MultiplicativeExpr:
 | MultiplicativeExpr Div UnaryExpr { $$ = ps->make(Div, {$1, $3}); }
 | MultiplicativeExpr Mod UnaryExpr { $$ = ps->make(Mod, {$1, $3}); }
 
-UnaryExpr: UnionExpr | '-' UnaryExpr { $$ = ps->make('-', {$2}); }
+UnaryExpr: UnionExpr | '-' UnaryExpr { $$ = ps->make(Ast::Neg, {$2}); }
 
 UnionExpr: PathExpr | UnionExpr '|' PathExpr { $$ = ps->make('|', {$1, $3}); }
 

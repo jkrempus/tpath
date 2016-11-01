@@ -13,7 +13,8 @@ struct Ast
     AbsPath,
     RelPath,
     Step,
-    PredicateList
+    PredicateList,
+    Neg
   };
 
   static const char* enum_to_str(int val)

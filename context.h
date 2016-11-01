@@ -66,9 +66,9 @@ struct Context
       for(auto node = this; node; node = node->parent.get())
       {
         char len[100];
-        sprintf(len, "%016llx\n", (long long)(node->name.size()));
+        sprintf(len, "%llx ", (long long)(node->name.size()));
         r += len;
-        r += node->name.size();
+        r += node->name;
       }
 
       return r;
@@ -213,9 +213,7 @@ struct Context
           stack.pop_back();
 
           if(!skip_next)
-          {
             if(!recurse(node)) return;
-          }
 
           skip_next = false;
           Tree::iterate_children(node->node,
@@ -326,7 +324,7 @@ struct Context
         if(!a.num() || !b.num())
         {
           err = std::string(
-            "Arguments of arithmetic operations must be strings.");
+            "Arguments of arithmetic operations must be numbers.");
 
           return Value(); 
         }
@@ -336,6 +334,42 @@ struct Context
           ast->kind == '-' ? *a.num() - *b.num() :
           ast->kind == Mul ? *a.num() * *b.num() : *a.num() / *b.num());
       }
+      else if(ast->kind == '|')
+      {
+        if(!a.nodes() || !b.nodes())
+        {
+          err = std::string("Arguments to union must be node sets.");
+          return Value();
+        }
+
+        NodeVec v = *a.nodes();
+        std::unordered_set<std::string> set;
+        for(auto& e : *a.nodes()) set.insert(e->key());
+        for(auto& e : *b.nodes())
+        {
+          auto key = e->key();
+          if(set.count(key) == 0)
+          {
+            set.insert(key);
+            v.push_back(e);
+          }
+        }
+
+        auto r = Value(std::move(v));
+        return r;
+      }
+    }
+    else if(ast->kind == Ast::Neg)
+    {
+      assert(ast->children.size() == 1);
+      auto a = evaluate_impl(ast->children[0], context_node);
+      if(!a.num())
+      {
+        err = std::string("The argument of negation must be a number.");
+        return Value();
+      }
+
+      return Value(- *a.num());
     }
 
     return Value();
@@ -353,13 +387,12 @@ struct Context
     comparison_ops = DenseIntSet({'>', '<', GE, LE});
     arithmetic_ops = DenseIntSet({'+', '-', Mul, Div});
 
-    DenseIntSet logical_ops = DenseIntSet({Or, And});
+    DenseIntSet other_ops = DenseIntSet({Or, And, '|'});
 
     binary_ops = DenseIntSet({
       equality_ops,
       comparison_ops,
       arithmetic_ops,
-      logical_ops});
+      other_ops});
   }
 };
-

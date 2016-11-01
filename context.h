@@ -144,7 +144,7 @@ struct Context
           Tree::iterate_children(node->node,
             [&](const node_type& child_node, const std::string& child_name)
           {
-            stack.push_back(make_node(child_node, child_name, context_node));
+            stack.push_back(make_node(child_node, child_name, node));
             return true;
           });
         }

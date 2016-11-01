@@ -23,7 +23,7 @@ child::               *yylval = ps->make(Child); return Child;
 ancestor::            *yylval = ps->make(Ancestor); return Ancestor;
 descendant::          *yylval = ps->make(Descendant); return Descendant;
 descendant-or-self::  *yylval = ps->make(DescendantOrSelf); return DescendantOrSelf;
-\"(\\.|[^"])*\"       *yylval = ps->make(String, yytext); return String;
+\"(\\.|[^"])*\"       *yylval = ps->make_string_literal(yytext); return String;
 {D}+                  |
 {D}+"."{D}+           |
 {D}+"."{D}+{E}        *yylval = ps->make(Number, atof(yytext)); return Number;

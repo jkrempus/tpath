@@ -21,10 +21,36 @@ AstRange children_range(const std::shared_ptr<Ast>& ast)
   return { &ast->children[0], &ast->children[0] + ast->children.size() };
 }
 
+struct DenseIntSet
+{
+  std::vector<char> table;
+  DenseIntSet() = default;
+  DenseIntSet(std::initializer_list<int> l) { for(auto e : l) add(e); }
+  DenseIntSet(std::initializer_list<DenseIntSet> l)
+  {
+    for(auto e : l)
+      for(int i = 0; i < e.table.size(); i++)
+        if(e.table[i])
+          add(i);
+  }
+
+  void add(int a) 
+  {
+    if(a >= table.size()) table.resize(a + 1, 0);
+    table[a] = 1;
+  }
+
+  bool contains(int a){ return a < table.size() && table[a]; }
+};
+
 template<typename Tree>
 struct Context
 {
   using node_type = typename Tree::node_type;
+
+  DenseIntSet equality_ops;
+  DenseIntSet comparison_ops;
+  DenseIntSet binary_ops;
 
   struct NodeStorage
   {
@@ -50,7 +76,8 @@ struct Context
 
   class Value
   {
-    using Variant = nonstd::variant<NodeVec, double, std::string>;
+    struct Some{};
+    using Variant = nonstd::variant<NodeVec, double, std::string, Some>;
     std::shared_ptr<Variant> ptr;
 
   public:
@@ -59,20 +86,28 @@ struct Context
     Value(const std::string& a) : ptr(new Variant(a)) {} 
     Value(const NodeVec& a) : ptr(new Variant(a)) {}
     Value(NodeVec&& a) : ptr(new Variant(std::move(a))) {}
+    Value(Some a) : ptr(new Variant(a)) {} 
+    static Value bool_(bool a) { return a ? Value(Some()) : Value(); }
 
     NodeVec* nodes() { return nonstd::get_if<NodeVec>(ptr.get()); }
     std::string* str() { return nonstd::get_if<std::string>(ptr.get()); }
     double* num() { return nonstd::get_if<double>(ptr.get()); }
+    bool some() { return bool(nonstd::get_if<Some>(ptr.get())); }
     bool none() { return ptr == nullptr; }
+
+    bool same_type(const Value& other)
+    {
+      if(!ptr && !other.ptr) return true;
+      else if(!ptr || !other.ptr) return false;
+      else return ptr->index() == other.ptr->index();
+    }
   };
 
   struct Function
   {
     virtual Value call(
-      Context* context,
-      const Node& context_node, 
-      const Value* args,
-      int num_args) = 0;
+      Context* context, const Node& context_node, 
+      const Value* args, int num_args) = 0;
   };
 
   nonstd::optional<std::string> err;
@@ -215,6 +250,27 @@ struct Context
     }
     else if(ast->kind == Number) return Value(ast->num);
     else if(ast->kind == String) return Value(ast->str);
+    else if(binary_ops.contains(ast->kind))
+    {
+      assert(ast->children.size() == 2);
+      auto a = evaluate_impl(ast->children[0], context_node);
+      auto b = evaluate_impl(ast->children[1], context_node);
+     
+      if(equality_ops.contains(ast->kind))
+      {
+        bool eq;
+        if(!a.same_type(b)) eq = false;
+        else if(auto str = a.str()) eq = *str == *b.str();
+        else if(auto num = a.num()) eq = *num == *b.num();
+        else if(auto nodes = a.nodes())
+        {
+          //TODO
+          eq = false;
+        }
+
+        return Value::bool_(ast->kind == '=' ? eq : !eq);
+      }
+    }
 
     return Value();
   };
@@ -224,4 +280,12 @@ struct Context
   {
     return evaluate_impl(ast, make_node(node, name, nullptr));
   };
+
+  Context()
+  {
+    equality_ops = DenseIntSet({'=', NE}); 
+    comparison_ops = DenseIntSet({'>', '<', GE, LE});
+    binary_ops = DenseIntSet({equality_ops, comparison_ops});
+  }
 };
+

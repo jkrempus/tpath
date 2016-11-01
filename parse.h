@@ -117,6 +117,13 @@ struct ParseState
     return std::make_shared<Ast>(kind, val);
   }
   
+  std::shared_ptr<Ast> make_string_literal(const char* s)
+  {
+    //TODO: Handle escape sequences
+    auto tmp = std::string(s);
+    return std::make_shared<Ast>(String, tmp.substr(1, tmp.size() - 2).c_str());
+  }
+  
   std::shared_ptr<Ast> make(int kind)
   {
     return std::make_shared<Ast>(kind, (long long) 0);

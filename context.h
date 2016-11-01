@@ -71,12 +71,12 @@ struct Context
     virtual Value call(
       Context* context,
       const Node& context_node, 
-      const Value* values,
-      int num_values) = 0;
+      const Value* args,
+      int num_args) = 0;
   };
 
   nonstd::optional<std::string> err;
-  std::unordered_map<std::string, Function> functions;
+  std::unordered_map<std::string, std::unique_ptr<Function>> functions;
 
   bool node_accepted(
     const nonstd::optional<std::string>& name,
@@ -86,8 +86,7 @@ struct Context
     if(!context_node) return false;
 
     for(auto& e : predicates)
-      if(evaluate_impl(e, context_node).none())
-        return false;
+      if(evaluate_impl(e, context_node).none()) return false;
 
     return true;
   }
@@ -196,6 +195,26 @@ struct Context
       evaluate_path(children_range(ast), context_node, *r.nodes());
       return r;
     }
+    else if(ast->kind == Ast::Call)
+    {
+      auto& c = ast->children;
+      assert(c.size() >= 1 && c[0]->kind == Identifier);
+      auto name = c[0]->str;
+      auto fn_it = functions.find(name);
+      if(fn_it == functions.end())
+      {
+        err = "Unknown function " + name;
+        return Value();
+      }
+
+      std::vector<Value> args;
+      for(ptrdiff_t i = 1; i < c.size(); i++)
+        args.push_back(evaluate_impl(c[i], context_node));
+
+      return fn_it->second->call(this, context_node, &args[0], args.size());
+    }
+    else if(ast->kind == Number) return Value(ast->num);
+    else if(ast->kind == String) return Value(ast->str);
 
     return Value();
   };

@@ -1,6 +1,6 @@
 %define api.value.type {std::shared_ptr<Ast>}
 
-%token String Identifier Int Float
+%token String Identifier Number
 %token Or And NE LE GE Mul Div Mod DoubleSep DoubleDot
 %token Parent Self Child Ancestor Descendant DescendantOrSelf 
 
@@ -116,8 +116,7 @@ FilterExpr:
   VariableReference {}
 | '(' Expr ')' { $$ = $2; }
 | String
-| Int
-| Float
+| Number
 | FunctionCall
 | FilterExpr Predicate { $$ = ps->make(Ast::Filt, {$1, $2}); }
 %%

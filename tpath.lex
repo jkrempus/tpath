@@ -24,9 +24,9 @@ ancestor::            *yylval = ps->make(Ancestor); return Ancestor;
 descendant::          *yylval = ps->make(Descendant); return Descendant;
 descendant-or-self::  *yylval = ps->make(DescendantOrSelf); return DescendantOrSelf;
 \"(\\.|[^"])*\"       *yylval = ps->make(String, yytext); return String;
+{D}+                  |
 {D}+"."{D}+           |
-{D}+"."{D}+{E}        *yylval = ps->make(Float, atof(yytext)); return Float;
-{D}+                  *yylval = ps->make(Int, atoll(yytext)); return Int;
+{D}+"."{D}+{E}        *yylval = ps->make(Number, atof(yytext)); return Number;
 [0-9a-zA-Z_]+         *yylval = ps->make(Identifier, yytext); return Identifier;
 "//"                  *yylval = nullptr; return DoubleSep;
 ".."                  *yylval = nullptr; return DoubleDot;

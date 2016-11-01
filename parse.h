@@ -23,8 +23,7 @@ struct Ast
 #define CASE(s) case s: return #s;
       CASE(String)
       CASE(Identifier)
-      CASE(Int)
-      CASE(Float)
+      CASE(Number)
       CASE(Or)
       CASE(And)
       CASE(NE)
@@ -57,18 +56,16 @@ struct Ast
   int idx = 0;
   union
   {
-    long long int_;
-    double float_;
+    double num;
     std::string str;
     std::vector<std::shared_ptr<Ast>> children;
   };
 
   Ast(){}
-  Ast(int kind, long long int_) : kind(kind), int_(int_), idx(0) {}
-  Ast(int kind, double float_) : kind(kind), float_(float_), idx(1) {}
-  Ast(int kind, const char* str) : kind(kind), str(str), idx(2) {}
+  Ast(int kind, double num) : kind(kind), num(num), idx(0) {}
+  Ast(int kind, const char* str) : kind(kind), str(str), idx(1) {}
   Ast(int kind, std::initializer_list<std::shared_ptr<Ast>> children)
-  : kind(kind), children(), idx(3)
+  : kind(kind), children(), idx(2)
   {
     for(auto e : children)
     {
@@ -87,9 +84,8 @@ struct Ast
     else
       printf("%s ", enum_to_str(kind));
 
-    if(idx == 2) printf("%s\n", str.c_str());
-    else if(idx == 0) printf("%lld\n", int_);
-    else if(idx == 1) printf("%lf\n", float_);
+    if(idx == 1) printf("%s\n", str.c_str());
+    else if(idx == 0) printf("%lf\n", num);
     else
     {
       printf("node\n");
@@ -101,10 +97,8 @@ struct Ast
 
   ~Ast()
   {
-    if(idx == 2)
-      str.~basic_string();
-    else if(idx == 3)
-      children.~vector();
+    if(idx == 1) str.~basic_string();
+    else if(idx == 2) children.~vector();
   }
 };
 
